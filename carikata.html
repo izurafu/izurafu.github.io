@@ -30,6 +30,10 @@
         height: 100%;
     }
 
+    .bahasa {
+        margin-bottom: 24px;
+    }
+
     .jawaban {
         width: 100%;
         display: flex;
@@ -94,6 +98,13 @@
             <input type="text" id="huruf" name="huruf" placeholder="(misal: malapu)" autocomplete="off" />
             <label for="pola">Masukkan pola (tanpa spasi, - apabila kosong):</label>
             <input type="text" id="pola" name="pola" placeholder="(misal: --m---)" autocomplete="iff" />
+            <div class="bahasa">
+                <input type="radio" id="radioindo" name="radiobahasa" checked>
+                <label for="radioindo" class="checkable">Indonesia</label>
+
+                <input type="radio" id="radioenglish" name="radiobahasa">
+                <label for="radioenglish" class="checkable">English</label>
+            </div>
             <button type="button" onclick="cariKata()">Cari kata!</button>
         </form>
         <div class="jawaban" id="jawaban"></div>
@@ -117,11 +128,28 @@
 
 <script>
     var kamus
+    var kamusIndonesia
+    var kamusEnglish
     document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("radioindo").addEventListener("change", function () {
+            document.getElementById("jawaban").innerHTML = ""
+        })
+
+        document.getElementById("radioenglish").addEventListener("change", function () {
+            document.getElementById("jawaban").innerHTML = ""
+        })
+
         fetch("kbbi.json")
             .then((response) => response.json())
             .then((data) => {
                 kamus = data
+                kamusIndonesia = data
+            })
+            .catch((e) => console.log(e))
+        fetch("oxford.json")
+            .then((response) => response.json())
+            .then((data) => {
+                kamusEnglish = data
             })
             .catch((e) => console.log(e))
     })
@@ -177,10 +205,17 @@
             return
         }
 
+        if (document.getElementById("radioindo").checked) {
+            kamus = kamusIndonesia
+            document.getElementById("modal_link").classList.remove("none")
+        } else if (document.getElementById("radioenglish").checked) {
+            kamus = kamusEnglish
+            document.getElementById("modal_link").classList.add("none")
+        }
+
         var huruf = huruf.toLowerCase()
         var pola = pola.toLowerCase()
         var kataTersedia = Object.keys(kamus)
-
 
         var jawaban = []
 
