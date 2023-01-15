@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/picnic">
+
+<style>
+    body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    label {
+        font-size: 20px;
+    }
+
+    input {
+        font-size: 24px;
+        letter-spacing: 3px;
+        margin-bottom: 24px;
+    }
+
+    button {
+        font-size: 24px;
+        margin-bottom: 24px;
+    }
+
+    .container {
+        width: 90%;
+        height: 100%;
+    }
+
+    .jawaban {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        font-size: 28px;
+        padding: 4px;
+        gap: 12px;
+    }
+
+    .jawaban-item {
+        flex: 1 0 21%;
+        max-width: 25%;
+        font-size: 32px;
+        display: flex;
+        justify-content: center;
+        padding: 12px 0;
+        margin: 8px 0;
+        /* border: 1px solid gray; */
+        outline: 1px solid gray;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .jawaban-item:hover {
+        border: 0px;
+        color: white;
+        background-color: #3390e1;
+    }
+
+    .modal-container {
+        max-height: 50vh !important;
+        padding: 12px !important;
+        display: flex !important;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .modal-header {
+        font-size: 32px;
+        padding: 4px 0;
+        font-weight: bold;
+        border-bottom: 1px solid gray;
+    }
+
+    .modal-content {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-y: scroll;
+    }
+</style>
+
+<head>
+    <title>Pencari Kata</title>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Pencari Kata 🔎</h1>
+        <form>
+            <label for="huruf">Masukkan huruf tersedia (tanpa spasi):</label>
+            <input type="text" id="huruf" name="huruf" placeholder="(misal: malapu)" autocomplete="off" />
+            <label for="pola">Masukkan pola (tanpa spasi, - apabila kosong):</label>
+            <input type="text" id="pola" name="pola" placeholder="(misal: --m---)" autocomplete="iff" />
+            <button type="button" onclick="cariKata()">Cari kata!</button>
+        </form>
+        <div class="jawaban" id="jawaban"></div>
+    </div>
+    <div class="modal">
+        <input id="modal_detail" type="checkbox" />
+        <label for="modal_detail" class="overlay"></label>
+        <div class="modal-container">
+            <div class="modal-header">
+                <span id="modal_kata"></span>
+                <label for="modal_detail" class="close">&times;</label>
+            </div>
+            <div id="modal_definisi" class="modal-content">
+            </div>
+            <div class="modal-footer">
+                <a id="modal_link" href="#" class="button" target="_blank" rel="noopener noreferrer">Lihat KBBI</a>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script>
+    var kamus
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch("kbbi.json")
+            .then((response) => response.json())
+            .then((data) => {
+                kamus = data
+            })
+            .catch((e) => console.log(e))
+    })
+
+    document.onkeydown = function (e) {
+        if (e.keyCode == 27) {
+            var mods = document.querySelectorAll('.modal > [type=checkbox]');
+            [].forEach.call(mods, function (mod) { mod.checked = false; });
+        }
+    }
+
+    function printJawabanKosong(pesan) {
+        var jawabanDiv = document.getElementById("jawaban")
+        jawabanDiv.innerHTML = pesan
+    }
+
+    function printJawaban(array) {
+        var jawabanDiv = document.getElementById("jawaban")
+        jawabanDiv.innerHTML = ""
+
+        for (var i = 0; i < array.length; i++) {
+            var kata = array[i]
+            var definisi = kamus[array[i]]
+            var link = `https://kbbi.web.id/${kata}`
+
+            var item = document.createElement("div")
+            item.setAttribute("data-kata", kata)
+            item.setAttribute("data-definisi", definisi)
+            item.setAttribute("data-link", link)
+            item.className = "jawaban-item"
+            item.innerHTML = kata
+
+            item.addEventListener("click", function (e) {
+                var kata = e.currentTarget.getAttribute("data-kata")
+                var definisi = e.currentTarget.getAttribute("data-definisi")
+                var link = e.currentTarget.getAttribute("data-link")
+                document.getElementById("modal_kata").innerHTML = kata
+                document.getElementById("modal_definisi").innerHTML = definisi
+                document.getElementById("modal_link").href = link
+                document.getElementById("modal_detail").checked = true
+            })
+
+            jawabanDiv.appendChild(item)
+        }
+    }
+
+    function cariKata() {
+        var huruf = document.getElementById("huruf").value
+        var pola = document.getElementById("pola").value
+
+        if (huruf.length < 1 || pola.length < 1) {
+            printJawabanKosong("Huruf atau pola tidak boleh kosong")
+            return
+        }
+
+        var huruf = huruf.toLowerCase()
+        var pola = pola.toLowerCase()
+        var kataTersedia = Object.keys(kamus)
+
+
+        var jawaban = []
+
+        for (let i = 0; i < kataTersedia.length; i++) {
+            let kata = kataTersedia[i]
+            if (kata.length === pola.length) {
+                let temp = huruf.slice()
+                let isValid = true
+                for (let j = 0; j < kata.length; j++) {
+                    if (!temp.includes(kata[j])) {
+                        isValid = false
+                        break
+                    } else {
+                        temp = temp.replace(kata[j], "")
+                    }
+                }
+                if (isValid) {
+                    let isPolaValid = true
+                    for (let k = 0; k < pola.length; k++) {
+                        if (pola[k] !== "-" && pola[k] !== kata[k]) {
+                            isPolaValid = false
+                            break
+                        }
+                    }
+                    if (isPolaValid) jawaban.push(kata)
+                }
+            }
+        }
+
+        if (jawaban.length < 1) {
+            printJawabanKosong("Kata tidak ditemukan")
+        } else {
+            printJawaban(jawaban)
+        }
+    }
+</script>
+
+</html>
